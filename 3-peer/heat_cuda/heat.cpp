@@ -14,8 +14,8 @@ static const unsigned int LOCAL_HEIGHT = HEIGHT/2 + 1;
 
 // heat source
 static const float HEAT_TEMP = 5000.0f;
-static const unsigned int HEAT_X = 130;
-static const unsigned int HEAT_Y = 127;
+static unsigned int HEAT_X = 128;
+static unsigned int HEAT_Y = 127;
 
 // simulation parameters
 static const unsigned int STEPS = 30000;
@@ -34,6 +34,9 @@ static float* row_pointer(float* a, int row) {
 
 int main(int argc, char ** argv)
 {
+    if (argc > 1) {
+	HEAT_Y = atoi(argv[1]);
+    }
     size_t grid_size = WIDTH * HEIGHT * sizeof(float),
 	   local_grid_size = WIDTH * LOCAL_HEIGHT * sizeof(float);
 
@@ -50,12 +53,13 @@ int main(int argc, char ** argv)
 	CHECK_CUDA_CALL(cudaMalloc(&next[dev], local_grid_size));
 
 	// inicializar con la fuente de calor
-	int firstRow = (dev == 0 ? 0 : LOCAL_HEIGHT-1);
+	int firstRow = (dev == 0 ? 0 : LOCAL_HEIGHT-2);
 	CHECK_CUDA_CALL(cudaMemset(current[dev], 0, local_grid_size));
 	
 	// CHEQUEAR FUENTE DE CALOR
-	if (HEAT_Y - firstRow < LOCAL_HEIGHT)
+	if (HEAT_Y - firstRow < LOCAL_HEIGHT) {
 	    CHECK_CUDA_CALL(cudaMemcpy(&current[dev][idx(HEAT_X, HEAT_Y - firstRow)], &HEAT_TEMP, sizeof(float), cudaMemcpyHostToDevice));
+	}
 	CHECK_CUDA_CALL(cudaMemcpy(next[dev], current[dev], local_grid_size, cudaMemcpyDeviceToDevice));
     }
     
@@ -64,7 +68,9 @@ int main(int argc, char ** argv)
     for (unsigned int step = 0; step < STEPS; ++step) {
 	for (int dev = 0; dev < 2; dev++) {
 	    CHECK_CUDA_CALL(cudaSetDevice(dev));
-	    update_cuda(WIDTH, 1, WIDTH-1, 1, LOCAL_HEIGHT-1, HEAT_X, HEAT_Y, current[dev], next[dev]);
+
+    	    int firstRow = (dev == 0 ? 0 : LOCAL_HEIGHT-2);
+	    update_cuda(WIDTH, 1, WIDTH-1, 1, LOCAL_HEIGHT-1, HEAT_X, HEAT_Y - firstRow, current[dev], next[dev]);
 
 	    float * swap = current[dev];
 	    current[dev] = next[dev];
@@ -101,7 +107,6 @@ int main(int argc, char ** argv)
     for (unsigned int y = 0; y < HEIGHT; ++y) {
         for (unsigned int x = 0; x < WIDTH; ++x) {
             gfx[idx(x, y)] = color1(result[idx(x, y)] / HEAT_TEMP);
-	    if (y == HEIGHT/2) gfx[idx(x,y)] = color1(1);
         }
     }
 
