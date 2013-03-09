@@ -1,0 +1,16 @@
+Se implemento la simulación de la ecuación del calor utilizando 2 GPUs.
+La comunicación de los halos en cada iteración fue implementado de 3 modos diferentes: peer-copy, mpich y mpi.
+
+Las carpetas de este proyecto tienen todo el codigo necesario para compilar y ejecutar las diferentes alternativas:
+
+1 - original
+Código original dado por la cátedra
+
+2 - mpich
+Compilado y ejecutado con la implementacion mvapich, que realiza copia directa de los halos entre las GPUs.
+
+3 - peer
+Aqui solo se utiliza un solo proceso. El cual se encarga de reservar memorias entre ambas tarjetas y realizar el copiado correspondiente en cada iteración.
+
+4 - mpi
+Se utiliza la implementacion OpenMPI, para esto es necesario reserva un buffer en cada proceso que se encarga de pasar la información de la memoria de GPU al host, pasa el mensaje al otro proceso y por último sube la data al otro GPU.
